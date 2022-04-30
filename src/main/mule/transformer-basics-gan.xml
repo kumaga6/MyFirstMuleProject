@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cf0984bd-e5ff-4206-9f2f-c90538984e91" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="transformer-basics-ganFlow" doc:id="38b3c386-ed23-4f98-8d56-3eb23e75b2ce" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="2bc52bcd-682e-43c0-96c6-057851a7f602" config-ref="HTTP_Listener_config" path="/transform"/>
+		<ee:transform doc:name="Transform Message" doc:id="7e8c02ce-0e55-476d-be4d-3bc342165ab9" >
+			<ee:message >
+				<ee:set-payload resource="products.dwl" />
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable resource="brandname.dwl" variableName="brandname" />
+				<ee:set-variable resource="images.dwl" variableName="images" />
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e2a2fa54-26f6-47af-ac4d-86ce7876f7e3" message="#[vars.brandname ++ ' ' ++ vars.images]"/>
+	</flow>
+	<flow name="transformer-basics-ganFlow1" doc:id="dfde8ea7-753f-4300-b83d-594915fb3b34" >
+		<scheduler doc:name="Scheduler" doc:id="03b5a839-a8e2-46c0-9a7b-5f9bb5bd7389" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</scheduler>
+		<set-payload value="#[['a','b','c','d','e']]" doc:name="['a','b','c','d','e']" doc:id="c0a0f84e-c2cf-4179-8106-b07c7b69bd36" />
+		<batch:job jobName="transformer-basics-ganBatch_Job" doc:id="caaae2df-a08c-4401-ab86-a444f5be590e" blockSize="2">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="4a8ffee0-2f26-4515-aab9-a510a5057803" acceptExpression='#[not (payload contains "b")]'>
+					<ee:transform doc:name="Transform Message" doc:id="75fc698e-d27e-47b9-962a-c5b7c516ceb0" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+upper(payload)]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="66fc241e-06c6-4474-8ac6-4aa016f6d2e4" size="3">
+						<logger level="INFO" doc:name="payload" doc:id="1a5b2096-c5ea-41b7-85ef-f85f880a5a7c" message="#[output aplication/json --- payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+		</batch:job>
+	</flow>
+</mule>
